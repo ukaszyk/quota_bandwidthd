@@ -10,7 +10,7 @@
 #        AUTHOR:  Lukasz Plewa (), ukaszyk@gmail.com
 #       VERSION:  1.0
 #       CREATED:  2015-06-26 16:17:32
-# LAST MODIFIED:  2015-06-30 11:18:56
+# LAST MODIFIED:  2015-06-30 13:26:55
 #      REVISION:  ---
 #===============================================================================
 . /lib/functions.sh
@@ -46,16 +46,15 @@ get_quota()
 {
 	local quota=0
 	local ip=""
-	ip=$(uci get -q bandwidthd.@quota[-1].quota_ip)
-	echo $ip
 
+	ip=$(uci get -q bandwidthd.@quota[-1].quota_ip)
 	quota=$(uci get -q bandwidthd.@quota[-1].limit_mb)
 	if [ -z $quota ]; then
-		echo "0"
-	elif
-		echo "$quota"
+		quota="0"
 	fi
+	echo "$ip:$quota"
 }
+
 
 to_mb()
 {
@@ -74,8 +73,8 @@ to_mb()
 }
 
 QUOTA_CONFIG=$( get_quota )
-IP=$( echo $QUOTA_CONFIG | cut -f 1 )
-QUOTA=$( echo $QUOTA_CONFIG | cut -f 2 )
+IP=$( echo "$QUOTA_CONFIG" | cut -d':' -f 1 )
+QUOTA=$( echo "$QUOTA_CONFIG" | cut -d':' -f 2 )
 echo "QUOTA=$QUOTA, IP=$IP"
 
 MONTHLY_USED=$(cat /www/bandwidthd/index3.html |grep "#10.1.1.100"|cut -d">" -f8|cut -d"<" -f1)
@@ -97,9 +96,9 @@ USED_MB=$MONTHLY_USED_MB
 echo "Final USED_MB=$USED_MB"
 
 if [ $QUOTA -lt $MONTHLY_USED_MB ]; then
-	echo "Exceed quota for this month. Turn on blocking rule for GSM"
+	echo "Exceed quota for this month. Turn on blocking rule"
 	unblock_rule "1"
 else
-	echo "Quota for this month not exceeded. Turn off blocking rule for GSM"
+	echo "Quota for this month not exceeded. Turn off blocking rule"
 	unblock_rule "0"
 fi
